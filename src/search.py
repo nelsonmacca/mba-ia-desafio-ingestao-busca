@@ -1,29 +1,27 @@
-PROMPT_TEMPLATE = """
-CONTEXTO:
-{contexto}
+import os, sys
+from dotenv import load_dotenv
+from langchain_openai import OpenAIEmbeddings
+from langchain_postgres import PGVector
 
-REGRAS:
-- Responda somente com base no CONTEXTO.
-- Se a informação não estiver explicitamente no CONTEXTO, responda:
-  "Não tenho informações necessárias para responder sua pergunta."
-- Nunca invente ou use conhecimento externo.
-- Nunca produza opiniões ou interpretações além do que está escrito.
+load_dotenv()
 
-EXEMPLOS DE PERGUNTAS FORA DO CONTEXTO:
-Pergunta: "Qual é a capital da França?"
-Resposta: "Não tenho informações necessárias para responder sua pergunta."
+COLLECTION = os.getenv("PG_VECTOR_COLLECTION_NAME", "minha_colecao")
+DB_URL = os.getenv("DATABASE_URL")
+EMBED_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 
-Pergunta: "Quantos clientes temos em 2024?"
-Resposta: "Não tenho informações necessárias para responder sua pergunta."
+def search(query: str, k: int = 10):
+    embeddings = OpenAIEmbeddings(model=EMBED_MODEL)
 
-Pergunta: "Você acha isso bom ou ruim?"
-Resposta: "Não tenho informações necessárias para responder sua pergunta."
+    vs = PGVector(
+        embeddings=embeddings,            # <-- aqui é embeddings=
+        collection_name=COLLECTION,
+        connection=DB_URL
+    )
 
-PERGUNTA DO USUÁRIO:
-{pergunta}
+    return vs.similarity_search_with_score(query, k=k)
 
-RESPONDA A "PERGUNTA DO USUÁRIO"
-"""
-
-def search_prompt(question=None):
-    pass
+if __name__ == "__main__":
+    q = " ".join(sys.argv[1:]) or "Qual o faturamento da Empresa SuperTechIABrazil?"
+    results = search(q, k=10)
+    for doc, score in results:
+        print(f"[score={score:.4f}] (p.{doc.metadata.get('page','?')}) {doc.page_content[:200]}...")

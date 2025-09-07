@@ -1,3 +1,4 @@
+
 services:
   postgres:
     image: pgvector/pgvector:pg17
@@ -9,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "D:/DevIA/Tools/Docker-Volumes/postgres:/var/lib/postgresql/data"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d rag"]
       interval: 10s
@@ -28,6 +29,3 @@ services:
       psql "postgresql://postgres@postgres:5432/rag" -v ON_ERROR_STOP=1
       -c "CREATE EXTENSION IF NOT EXISTS vector;"
     restart: "no"
-
-volumes:
-  postgres_data:
